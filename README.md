@@ -103,5 +103,4 @@ Or use Python 3.13 directly:
 "C:\Users\Muhammad Noor\AppData\Local\Programs\Python\Python313\python.exe" -m pip install -r requirements.txt
 "C:\Users\Muhammad Noor\AppData\Local\Programs\Python\Python313\python.exe" app.py
 ```
-## License
-This project is for educational purposes (Assignment 2).
+
