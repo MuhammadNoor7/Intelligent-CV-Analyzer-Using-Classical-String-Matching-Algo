@@ -1,0 +1,16 @@
+Position: Data Scientist
+Overview:
+We need a data-driven problem solver who can build predictive models, communicate insights, and support product decisions.
+
+Core Responsibilities:
+- Clean and prepare large datasets from multiple sources.
+- Develop, validate, and deploy machine learning models.
+- Communicate findings to stakeholders via dashboards and presentations.
+
+Required Skills:
+Python, Machine Learning, Deep Learning, SQL, Data Visualization,
+Pandas, NumPy, Statistics, Tableau/Power BI, Cloud Platforms (AWS/Azure),
+Communication, Experimentation Design
+
+Preferred Extras:
+MLOps, TensorFlow or PyTorch, NLP, A/B testing

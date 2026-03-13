@@ -1,0 +1,16 @@
+Position: Web Developer
+Overview:
+Build and maintain responsive web applications, focusing on performance, accessibility, and clean architecture.
+
+Core Responsibilities:
+- Translate UI/UX designs into reusable front-end components.
+- Integrate REST APIs and manage state efficiently.
+- Optimize applications for scalability and cross-browser compatibility.
+
+Required Skills:
+HTML, CSS, JavaScript, React, Node.js, Express, REST APIs,
+Responsive Design, Git, Webpack/Vite, Testing (Jest/Cypress),
+Problem Solving, Communication
+
+Preferred Extras:
+TypeScript, GraphQL, Docker, CI/CD pipelines, Cloud Hosting (AWS/GCP)

@@ -1,0 +1,17 @@
+Position: Software Tester
+Overview:
+Ensure product quality through systematic test planning, automation, and defect tracking.
+
+Core Responsibilities:
+- Create and execute test plans, test cases, and test scripts.
+- Automate regression suites and integrate them into CI pipelines.
+- Log defects, verify fixes, and report quality metrics.
+
+Required Skills:
+Manual Testing, Test Automation, Selenium, JUnit/PyTest,
+API Testing (Postman/RestAssured), SQL, Bug Tracking (Jira),
+Test Case Management, Communication, Analytical Thinking
+
+Preferred Extras:
+Performance Testing (JMeter/LoadRunner), Security Testing basics,
+Continuous Integration (Jenkins/GitHub Actions), Scripting (Python/Java)
