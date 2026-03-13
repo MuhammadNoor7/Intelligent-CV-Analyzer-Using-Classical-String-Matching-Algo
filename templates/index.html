@@ -1,1 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV Analyzer - Intelligent Resume Screening</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>CV Analyzer</h1>
+            <p class="subtitle">Automated skill extraction and job fit evaluation</p>
+        </header>
+
+        <nav class="navigation">
+            <a href="{{ url_for('index') }}" class="nav-link active">CV Analysis</a>
+            <a href="{{ url_for('results') }}" class="nav-link">Performance Comparison</a>
+        </nav>
+
+        <main class="main-content">
+            <div class="upload-section">
+                <h2>Upload CV and Job Description</h2>
+                
+                <form id="cv-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="cv_file">Upload CV Files</label>
+                        <input type="file" id="cv_file" name="cv_file" accept=".pdf,.docx" multiple required>
+                        <small>Select multiple PDF or DOCX files. All files will be processed and ranked by relevance.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="job_template">Load Job Description Template</label>
+                        <select id="job_template">
+                            <option value="">Select a template...</option>
+                            <option value="data_scientist">Data Scientist</option>
+                            <option value="software_tester">Software Tester</option>
+                            <option value="web_developer">Web Developer</option>
+                        </select>
+                        <small>Automatically fills the job description field with the selected role.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="job_description">Job Description (Optional)</label>
+                        <textarea id="job_description" name="job_description" rows="6" 
+                                  placeholder="Paste the job description here. Keywords will be extracted automatically if no keywords are provided below."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="keywords">Keywords / Skills</label>
+                        <input type="text" id="keywords" name="keywords" 
+                               placeholder="Python, Machine Learning, SQL, Data Analysis">
+                        <small>Comma-separated list. Leave empty to use default skills or extract from job description.</small>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="case_sensitive" name="case_sensitive" value="false">
+                            Case-sensitive matching
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Analyze CV</button>
+                </form>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Analyzing CV with string matching algorithms...</p>
+            </div>
+
+            <div id="results-section" class="results-section hidden">
+                <h2>Analysis Results - Ranked Candidates</h2>
+                <p id="num-cvs-processed" class="cv-count"></p>
+                
+                <div class="algorithms-grid">
+                    <div class="algorithm-card" id="bf-card">
+                        <h3>Brute Force</h3>
+                        <div class="score-display">
+                            <span class="score-label">Avg Time:</span>
+                            <span class="score-value" id="bf-time">0 ms</span>
+                        </div>
+                        <div class="metrics">
+                            <div class="metric">
+                                <span class="metric-label">Total Comparisons:</span>
+                                <span class="metric-value" id="bf-comparisons">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="algorithm-card" id="rk-card">
+                        <h3>Rabin-Karp</h3>
+                        <div class="score-display">
+                            <span class="score-label">Avg Time:</span>
+                            <span class="score-value" id="rk-time">0 ms</span>
+                        </div>
+                        <div class="metrics">
+                            <div class="metric">
+                                <span class="metric-label">Total Comparisons:</span>
+                                <span class="metric-value" id="rk-comparisons">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="algorithm-card" id="kmp-card">
+                        <h3>KMP (Knuth-Morris-Pratt)</h3>
+                        <div class="score-display">
+                            <span class="score-label">Avg Time:</span>
+                            <span class="score-value" id="kmp-time">0 ms</span>
+                        </div>
+                        <div class="metrics">
+                            <div class="metric">
+                                <span class="metric-label">Total Comparisons:</span>
+                                <span class="metric-value" id="kmp-comparisons">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="candidates-list" class="candidates-list"></div>
+
+                <div class="action-buttons">
+                    <a href="{{ url_for('results') }}" class="btn-primary-static">View Performance Comparison</a>
+                    <button type="button" onclick="window.location.reload()" class="btn-primary-static">Analyze Another Batch</button>
+                </div>
+            </div>
+
+            <div id="error-message" class="error-message hidden"></div>
+        </main>
+
+        <footer>
+            <p>CV Analyzer — String Matching Algorithms</p>
+        </footer>
+    </div>
+
+    <script>
+        const jobTemplateSelect = document.getElementById('job_template');
+        const jobDescriptionField = document.getElementById('job_description');
+        const jobDescriptionUrlTemplate = "{{ url_for('get_job_description', job_key='__JOB_KEY__') }}";
+        let previousTemplateSelection = '';
+
+        if (jobTemplateSelect && jobDescriptionField)
+        {
+            jobTemplateSelect.addEventListener('change', async (event) =>
+            {
+                const selectedTemplate = event.target.value;
+
+                if (!selectedTemplate)
+                {
+                    previousTemplateSelection = '';
+                    return;
+                }
+
+                if (
+                    jobDescriptionField.value.trim() &&
+                    selectedTemplate !== previousTemplateSelection &&
+                    !window.confirm('Loading a template will replace the current job description. Continue?')
+                )
+                {
+                    jobTemplateSelect.value = previousTemplateSelection;
+                    return;
+                }
+
+                const requestUrl = jobDescriptionUrlTemplate.replace('__JOB_KEY__', encodeURIComponent(selectedTemplate));
+                const previousContent = jobDescriptionField.value;
+
+                jobTemplateSelect.disabled = true;
+                jobDescriptionField.value = 'Loading template...';
+
+                try
+                {
+                    const response = await fetch(requestUrl);
+                    if (!response.ok)
+                    {
+                        throw new Error('Template not available');
+                    }
+
+                    const data = await response.json();
+                    if (!data.content)
+                    {
+                        throw new Error('Template is empty');
+                    }
+
+                    jobDescriptionField.value = data.content.trim();
+                    previousTemplateSelection = selectedTemplate;
+                } catch (error)
+                {
+                    jobDescriptionField.value = previousContent;
+                    jobTemplateSelect.value = previousTemplateSelection;
+                    alert('Unable to load job description template. Please try again.\nDetails: ' + error.message);
+                    return;
+                } finally
+                {
+                    jobTemplateSelect.disabled = false;
+                }
+            });
+        }
+
+        document.getElementById('cv-form').addEventListener('submit', async function(e)
+        {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const loading = document.getElementById('loading');
+            const resultsSection = document.getElementById('results-section');
+            const errorMessage = document.getElementById('error-message');
+            
+            //showing loading, hide results and error
+            loading.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            
+            try
+            {
+                const response = await fetch('{{ url_for("analyze_cv") }}',
+                {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok)
+                {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+                
+                //checking if we have valid results
+                if (data.success && data.cv_results && data.cv_results.length > 0)
+                {
+                    //displaying results
+                    displayResults(data);
+                    
+                    loading.classList.add('hidden');
+                    resultsSection.classList.remove('hidden');
+
+                    //showing warning if some files failed
+                    if (data.failed_count > 0)
+                    {
+                        const warningMsg = document.createElement('div');
+                        warningMsg.className = 'error-message';
+                        warningMsg.style.background = '#FFF3CD';
+                        warningMsg.style.color = '#856404';
+                        warningMsg.style.borderColor = '#FFE69C';
+                        warningMsg.textContent = `Warning: ${data.failed_count} file(s) could not be processed.`;
+                        resultsSection.insertBefore(warningMsg, resultsSection.firstChild);
+                    }
+                } else
+                {
+                    throw new Error(data.error || 'No valid CVs were processed');
+                }
+                
+            } catch (error)
+            {
+                loading.classList.add('hidden');
+                errorMessage.textContent = 'Error: ' + error.message;
+                errorMessage.classList.remove('hidden');
+            }
+        });
+        
+        function displayResults(data)
+        {
+            //displaying overall performance metrics
+            const algorithms =
+            {
+                'brute_force': 'bf',
+                'rabin_karp': 'rk',
+                'kmp': 'kmp'
+            };
+            
+            for (const [algo, prefix] of Object.entries(algorithms))
+            {
+                const metrics = data.performance_metrics[algo];
+                document.getElementById(`${prefix}-time`).textContent = metrics.avg_time.toFixed(4) + ' ms';
+                document.getElementById(`${prefix}-comparisons`).textContent = metrics.total_comparisons.toLocaleString();
+            }
+            
+            //displating number of CVs processed
+            document.getElementById('num-cvs-processed').textContent = 
+                `Processed ${data.num_cvs} CV file${data.num_cvs !== 1 ? 's' : ''}. Ranked by relevance score (highest first).`;
+            
+            //displaying ranked candidates list
+            const candidatesListEl = document.getElementById('candidates-list');
+            candidatesListEl.innerHTML = '';
+            
+            if (data.cv_results && data.cv_results.length > 0)
+            {
+                data.cv_results.forEach((cv, index) =>
+                {
+                    const candidateCard = document.createElement('div');
+                    candidateCard.className = 'candidate-card';
+                    
+                    //determing rank badge color
+                    let rankClass = 'rank-low';
+                    if (cv.relevance_score >= 70) rankClass = 'rank-high';
+                    else if (cv.relevance_score >= 40) rankClass = 'rank-medium';
+                    
+                    candidateCard.innerHTML = `
+                        <div class="candidate-header">
+                            <div class="candidate-rank">
+                                <span class="rank-badge ${rankClass}">#${index + 1}</span>
+                                <span class="candidate-filename">${cv.filename}</span>
+                            </div>
+                            <div class="candidate-score">
+                                <span class="score-label">Match Score:</span>
+                                <span class="score-value-large">${cv.relevance_score}%</span>
+                            </div>
+                        </div>
+                        <div class="candidate-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Matched Keywords:</span>
+                                <span class="detail-value matched">${cv.matched_count} / ${data.total_keywords}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Missing Keywords:</span>
+                                <span class="detail-value missing">${cv.missing_count} / ${data.total_keywords}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">CV Length:</span>
+                                <span class="detail-value">${cv.cv_text_length.toLocaleString()} characters</span>
+                            </div>
+                        </div>
+                        <div class="candidate-keywords">
+                            <div class="keywords-column">
+                                <h4>Matched (${cv.matched_keywords.length})</h4>
+                                <div class="keywords-list-small">
+                                    ${cv.matched_keywords.length > 0 
+                                        ? cv.matched_keywords.map((k, idx) => `
+                                            <span class="keyword-tag matched" ${idx >= 5 ? 'style="display:none" data-extra="matched"' : ''}>${k}</span>
+                                        `).join('') 
+                                        + (cv.matched_keywords.length > 5 ? `<span class="more-keywords" data-action="toggle" data-target="matched">+${cv.matched_keywords.length - 5} more</span>` : '')
+                                        : '<p class="no-keywords">None</p>'}
+                                </div>
+                            </div>
+                            ${cv.missing_keywords.length > 0 ? `
+                            <div class="keywords-column">
+                                <h4>Missing (${cv.missing_keywords.length})</h4>
+                                <div class="keywords-list-small">
+                                    ${cv.missing_keywords.map((k, idx) => `
+                                        <span class="keyword-tag missing" ${idx >= 5 ? 'style="display:none" data-extra="missing"' : ''}>${k}</span>
+                                    `).join('')}
+                                    ${cv.missing_keywords.length > 5 ? `<span class="more-keywords" data-action="toggle" data-target="missing">+${cv.missing_keywords.length - 5} more</span>` : ''}
+                                </div>
+                            </div>` : ''}
+                        </div>
+                    `;
+                    candidatesListEl.appendChild(candidateCard);
+                });
+
+                //attaching toggle handlers for keyword lists
+                candidatesListEl.querySelectorAll('.more-keywords[data-action="toggle"]').forEach(toggle =>
+                {
+                    toggle.addEventListener('click', () =>
+                    {
+                        const target = toggle.getAttribute('data-target');
+                        const hiddenTags = toggle.parentElement.querySelectorAll(`.keyword-tag[data-extra="${target}"]`);
+                        const isHidden = Array.from(hiddenTags).some(tag => tag.style.display === 'none');
+                        hiddenTags.forEach(tag =>
+                        {
+                            tag.style.display = isHidden ? 'inline-block' : 'none';
+                        });
+                        if (isHidden)
+                        {
+                            toggle.textContent = 'Show less';
+                        } else
+                        {
+                            toggle.textContent = `+${hiddenTags.length} more`;
+                        }
+                    });
+                });
+            } else
+            {
+                candidatesListEl.innerHTML = '<p class="no-results">No valid CVs were processed.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
 

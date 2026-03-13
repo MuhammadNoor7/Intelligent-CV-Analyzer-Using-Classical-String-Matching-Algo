@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Comparison - CV Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Performance Analysis</h1>
+            <p class="subtitle">Algorithm efficiency comparison</p>
+        </header>
+
+        <nav class="navigation">
+            <a href="{{ url_for('index') }}" class="nav-link">CV Analysis</a>
+            <a href="{{ url_for('results') }}" class="nav-link active">Performance Comparison</a>
+        </nav>
+
+        <main class="main-content">
+            <div id="no-results" class="no-results">
+                <p>No analysis results available. Please analyze a CV first.</p>
+                <a href="{{ url_for('index') }}" class="btn-primary">Go to CV Analysis</a>
+            </div>
+
+            <div id="results-content" class="results-content hidden">
+                <section class="overview-section">
+                    <div class="section-heading">
+                        <h2>Quick Overview</h2>
+                        <p class="section-subtitle">Start with the essentials before diving into charts and tables.</p>
+                    </div>
+
+                    <div class="overview-grid">
+                        <article class="overview-card" id="overall-card">
+                            <span class="card-label">Best Overall</span>
+                            <h3 id="overall-algo">—</h3>
+                            <p id="overall-summary"></p>
+                        </article>
+                        <article class="overview-card" id="speed-card">
+                            <span class="card-label">Fastest Algorithm</span>
+                            <h3 id="speed-algo">—</h3>
+                            <p id="speed-summary"></p>
+                        </article>
+                        <article class="overview-card" id="consistency-card">
+                            <span class="card-label">Most Efficient</span>
+                            <h3 id="consistency-algo">—</h3>
+                            <p id="consistency-summary"></p>
+                        </article>
+                    </div>
+
+                    <div class="rankings-card">
+                        <div class="rankings-header">
+                            <h3>Algorithm Rankings</h3>
+                            <span class="rankings-note">Sorted by execution time</span>
+                        </div>
+                        <ul id="algo-rankings" class="rankings-list"></ul>
+                    </div>
+                </section>
+
+                <section class="comparison-section">
+                    <div class="section-heading">
+                        <h2>Performance Metrics</h2>
+                        <p class="section-subtitle">Compare runtime and comparisons side by side.</p>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3>Total Execution Time</h3>
+                            <canvas id="time-chart"></canvas>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3>Average Time per Keyword</h3>
+                            <canvas id="avg-time-chart"></canvas>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3>Total Comparisons</h3>
+                            <canvas id="comparisons-chart"></canvas>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <h3>Average Comparisons per Keyword</h3>
+                            <canvas id="avg-comparisons-chart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="scenario-section" class="scenario-section hidden">
+                    <div class="section-heading">
+                        <h2>Scenario Comparison</h2>
+                        <p class="section-subtitle">Evaluate how algorithms behave with different CV sizes and keyword workloads.</p>
+                    </div>
+
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3>Avg Time per CV (CV Size)</h3>
+                            <canvas id="cv-size-time-chart"></canvas>
+                        </div>
+
+                        <div class="metric-card">
+                            <h3>Avg Comparisons per CV (CV Size)</h3>
+                            <canvas id="cv-size-comparisons-chart"></canvas>
+                        </div>
+
+                        <div class="metric-card">
+                            <h3>Avg Time per CV (Keyword Mode)</h3>
+                            <canvas id="keyword-mode-time-chart"></canvas>
+                        </div>
+
+                        <div class="metric-card">
+                            <h3>Avg Comparisons per CV (Keyword Mode)</h3>
+                            <canvas id="keyword-mode-comparisons-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="scenario-table-wrapper">
+                        <h3 class="scenario-heading">CV Size Breakdown</h3>
+                        <table class="performance-table scenario-table">
+                            <thead>
+                                <tr>
+                                    <th>Scenario</th>
+                                    <th>Algorithm</th>
+                                    <th>Avg Time / CV (ms)</th>
+                                    <th>Avg Time / Keyword (ms)</th>
+                                    <th>Avg Comparisons / CV</th>
+                                    <th>Avg Comparisons / Keyword</th>
+                                    <th>Samples</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cv-size-tbody"></tbody>
+                        </table>
+                        <p class="scenario-note" id="cv-size-note"></p>
+                    </div>
+
+                    <div class="scenario-table-wrapper">
+                        <h3 class="scenario-heading">Keyword Mode Breakdown</h3>
+                        <table class="performance-table scenario-table">
+                            <thead>
+                                <tr>
+                                    <th>Scenario</th>
+                                    <th>Algorithm</th>
+                                    <th>Avg Time / CV (ms)</th>
+                                    <th>Avg Time / Keyword (ms)</th>
+                                    <th>Avg Comparisons / CV</th>
+                                    <th>Avg Comparisons / Keyword</th>
+                                    <th>Samples</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keyword-mode-tbody"></tbody>
+                        </table>
+                        <p class="scenario-note">Single keyword results use the first keyword supplied in the form.</p>
+                    </div>
+                </section>
+
+                <section class="table-section">
+                    <div class="section-heading">
+                        <h2>Detailed Performance Table</h2>
+                        <p class="section-subtitle">Hover a row to highlight a single algorithm’s metrics.</p>
+                    </div>
+                    <table class="performance-table">
+                        <thead>
+                            <tr>
+                                <th>Algorithm</th>
+                                <th>Relevance Score</th>
+                                <th>Total Time (ms)</th>
+                                <th>Avg Time (ms)</th>
+                                <th>Total Comparisons</th>
+                                <th>Avg Comparisons</th>
+                                <th>Matched Keywords</th>
+                                <th>Missing Keywords</th>
+                            </tr>
+                        </thead>
+                        <tbody id="performance-tbody">
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="analysis-section">
+                    <div class="section-heading">
+                        <h2>Algorithm Analysis</h2>
+                        <p class="section-subtitle">Reference time and space complexity alongside practical trade-offs.</p>
+                    </div>
+                    
+                    <div class="analysis-table-wrapper">
+                        <table class="analysis-table">
+                            <thead>
+                                <tr>
+                                    <th>Algorithm</th>
+                                    <th>Time Complexity</th>
+                                    <th>Space Complexity</th>
+                                    <th>Advantages</th>
+                                    <th>Disadvantages</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Brute Force</strong></td>
+                                    <td>O(n*m)<br><span class="complexity-note">n = text length, m = pattern length</span></td>
+                                    <td>O(1)</td>
+                                    <td>Simple implementation, no preprocessing required</td>
+                                    <td>Less efficient for large texts, performs redundant comparisons</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Rabin-Karp</strong></td>
+                                    <td>O(n+m) avg<br><span class="complexity-note">O(n*m) worst case</span></td>
+                                    <td>O(1)</td>
+                                    <td>Good average-case performance, efficient for multiple patterns</td>
+                                    <td>Hash collisions can degrade performance, worst-case is slow</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Knuth-Morris-Pratt (KMP)</strong></td>
+                                    <td>O(n+m)</td>
+                                    <td>O(m)</td>
+                                    <td>Guaranteed linear time, no backtracking in text</td>
+                                    <td>Requires preprocessing (LPS array), additional space</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="recommendation-section">
+                    <div class="section-heading">
+                        <h2>Recommendation</h2>
+                        <p class="section-subtitle">Tailored guidance based on the current dataset.</p>
+                    </div>
+                    <div id="recommendation-card" class="recommendation-card">
+                        <p id="recommendation-text"></p>
+                    </div>
+                </section>
+
+                <div class="action-buttons">
+                    <a href="{{ url_for('index') }}" class="btn-primary">Analyze Another CV</a>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>CV Analyzer — String Matching Algorithms</p>
+        </footer>
+    </div>
+
+    <script>
+        //loading and display results
+        async function loadResults() {
+            try {
+                const response = await fetch('{{ url_for("get_results") }}');
+                const data = await response.json();
+                
+                if (response.ok && data.performance_metrics) {
+                    displayResults(data);
+                } else {
+                    document.getElementById('no-results').classList.remove('hidden');
+                    document.getElementById('results-content').classList.add('hidden');
+                }
+            } catch (error) {
+                document.getElementById('no-results').classList.remove('hidden');
+                document.getElementById('results-content').classList.add('hidden');
+            }
+        }
+        
+        function displayResults(data) {
+            document.getElementById('no-results').classList.add('hidden');
+            document.getElementById('results-content').classList.remove('hidden');
+            
+            const algorithms = ['brute_force', 'rabin_karp', 'kmp'];
+            const algoNames = {
+                'brute_force': 'Brute Force',
+                'rabin_karp': 'Rabin-Karp',
+                'kmp': 'KMP'
+            };
+            const algorithmColors = {
+                'brute_force': '#60a5fa',
+                'rabin_karp': '#fbbf24',
+                'kmp': '#34d399'
+            };
+
+            const destroyIfExists = (canvasId) => {
+                if (Chart && typeof Chart.getChart === 'function') {
+                    const existingChart = Chart.getChart(canvasId);
+                    if (existingChart) {
+                        existingChart.destroy();
+                    }
+                }
+            };
+            
+            //preparing data for charts
+            const labels = algorithms.map(a => algoNames[a]);
+            const totalTimes = algorithms.map(a => data.performance_metrics[a]?.total_time || 0);
+            const avgTimes = algorithms.map(a => data.performance_metrics[a]?.avg_time || 0);
+            const totalComparisons = algorithms.map(a => data.performance_metrics[a]?.total_comparisons || 0);
+            const avgComparisons = algorithms.map(a => data.performance_metrics[a]?.avg_comparisons || 0);
+            const relevanceScores = algorithms.map(a => {
+                const score = data.relevance_scores?.[a];
+                return typeof score === 'number' ? score : null;
+            });
+
+            const bestRelevance = Math.max(...relevanceScores.map(score => score ?? -Infinity));
+            const bestRelevanceIndex = bestRelevance === -Infinity ? -1 : relevanceScores.indexOf(bestRelevance);
+
+            const formatAlgoSummary = (algoKey, descriptor) => {
+                const metrics = data.performance_metrics[algoKey] || {};
+                const name = algoNames[algoKey];
+                const time = (metrics.total_time || 0).toFixed(3);
+                const comparisons = (metrics.total_comparisons || 0).toLocaleString();
+                return `${name} ${descriptor} in ${time} ms with ${comparisons} comparisons.`;
+            };
+
+            const updateCard = (elementId, algoKey, descriptor) => {
+                const nameTarget = document.getElementById(`${elementId}-algo`);
+                const summaryTarget = document.getElementById(`${elementId}-summary`);
+                if (!nameTarget || !summaryTarget) {
+                    return;
+                }
+                nameTarget.textContent = algoNames[algoKey];
+                summaryTarget.textContent = formatAlgoSummary(algoKey, descriptor);
+            };
+            
+            //Professional chart configuration
+            const chartConfig = {
+                type: 'bar',
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            titleFont: {
+                                size: 13,
+                                weight: 600
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            borderColor: '#e2e8f0',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(4) + (context.dataset.label.includes('Time') ? ' ms' : '');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#e2e8f0',
+                                lineWidth: 1
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: {
+                                    size: 12
+                                },
+                                padding: 8
+                            },
+                            border: {
+                                color: '#e2e8f0',
+                                width: 1
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#475569',
+                                font: {
+                                    size: 12,
+                                    weight: 500
+                                },
+                                padding: 12
+                            },
+                            border: {
+                                color: '#e2e8f0',
+                                width: 1
+                            }
+                        }
+                    }
+                }
+            };
+            
+            const createScenarioChart = (canvasId, labels, datasets, valueType) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) {
+                    return;
+                }
+
+                destroyIfExists(canvasId);
+
+                new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    color: '#475569',
+                                    font: {
+                                        size: 12,
+                                        weight: 500
+                                    },
+                                    usePointStyle: true,
+                                    pointStyle: 'rectRounded'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: '#1e293b',
+                                padding: 12,
+                                titleFont: {
+                                    size: 13,
+                                    weight: 600
+                                },
+                                bodyFont: {
+                                    size: 13
+                                },
+                                borderColor: '#e2e8f0',
+                                borderWidth: 1,
+                                cornerRadius: 6,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.parsed.y || 0;
+                                        const decimals = valueType === 'time' ? 4 : 2;
+                                        const suffix = valueType === 'time' ? ' ms' : '';
+                                        return `${context.dataset.label}: ${value.toFixed(decimals)}${suffix}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: '#e2e8f0',
+                                    lineWidth: 1
+                                },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: {
+                                        size: 12
+                                    },
+                                    padding: 8
+                                },
+                                border: {
+                                    color: '#e2e8f0',
+                                    width: 1
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#475569',
+                                    font: {
+                                        size: 12,
+                                        weight: 500
+                                    },
+                                    padding: 12
+                                },
+                                border: {
+                                    color: '#e2e8f0',
+                                    width: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            };
+
+            const populateScenarioTable = (tbodyId, metricsGroup, scenarioOrder, labelMap) => {
+                const tbodyEl = document.getElementById(tbodyId);
+                if (!tbodyEl) {
+                    return;
+                }
+
+                tbodyEl.innerHTML = '';
+
+                scenarioOrder.forEach((scenarioKey) => {
+                    const rows = algorithms.map(algo => ({
+                        algo,
+                        entry: metricsGroup?.[scenarioKey]?.[algo] || null
+                    }));
+                    const hasAnyData = rows.some(item => (item.entry?.sample_count || 0) > 0);
+                    if (!hasAnyData) {
+                        return;
+                    }
+
+                    rows.forEach(({ algo, entry }) => {
+                        const sampleCount = entry?.sample_count || 0;
+                        const hasData = sampleCount > 0;
+                        const formatValue = (valueKey, digits) => {
+                            if (!hasData) {
+                                return '—';
+                            }
+                            const value = Number(entry?.[valueKey] ?? 0);
+                            return value.toFixed(digits);
+                        };
+
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${labelMap[scenarioKey] || scenarioKey}</td>
+                            <td><strong>${algoNames[algo]}</strong></td>
+                            <td>${formatValue('avg_time_per_cv', 4)}</td>
+                            <td>${formatValue('avg_time_per_keyword', 4)}</td>
+                            <td>${formatValue('avg_comparisons_per_cv', 2)}</td>
+                            <td>${formatValue('avg_comparisons_per_keyword', 2)}</td>
+                            <td>${hasData ? sampleCount : '—'}</td>
+                        `;
+                        tbodyEl.appendChild(row);
+                    });
+                });
+            };
+
+            //creating charts with professional styling
+            destroyIfExists('time-chart');
+            new Chart(document.getElementById('time-chart'), {
+                ...chartConfig,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Time (ms)',
+                        data: totalTimes,
+                        backgroundColor: '#f87171',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        maxBarThickness: 30
+                    }]
+                }
+            });
+            
+            destroyIfExists('avg-time-chart');
+            new Chart(document.getElementById('avg-time-chart'), {
+                ...chartConfig,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg Time (ms)',
+                        data: avgTimes,
+                        backgroundColor: '#f87171',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        maxBarThickness: 30
+                    }]
+                }
+            });
+            
+            destroyIfExists('comparisons-chart');
+            new Chart(document.getElementById('comparisons-chart'), {
+                ...chartConfig,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Comparisons',
+                        data: totalComparisons,
+                        backgroundColor: '#f87171',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        maxBarThickness: 30
+                    }]
+                }
+            });
+            
+            destroyIfExists('avg-comparisons-chart');
+            new Chart(document.getElementById('avg-comparisons-chart'), {
+                ...chartConfig,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Avg Comparisons',
+                        data: avgComparisons,
+                        backgroundColor: '#f87171',
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        maxBarThickness: 30
+                    }]
+                }
+            });
+            
+            //populating table
+            const tbody = document.getElementById('performance-tbody');
+            tbody.innerHTML = '';
+            
+            algorithms.forEach(algo => {
+                const metrics = data.performance_metrics[algo] || {};
+                const relevanceScore = (data.relevance_scores && data.relevance_scores[algo]) 
+                    ? data.relevance_scores[algo] 
+                    : (data.num_cvs ? 'N/A' : '0');
+                const matchedCount = (data.matched_keywords && data.matched_keywords[algo]) 
+                    ? data.matched_keywords[algo].length 
+                    : 0;
+                const missingCount = (data.missing_keywords && data.missing_keywords[algo]) 
+                    ? data.missing_keywords[algo].length 
+                    : 0;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${algoNames[algo]}</strong></td>
+                    <td>${relevanceScore}${typeof relevanceScore === 'number' ? '%' : ''}</td>
+                    <td>${(metrics.total_time || 0).toFixed(4)}</td>
+                    <td>${(metrics.avg_time || 0).toFixed(4)}</td>
+                    <td>${(metrics.total_comparisons || 0).toLocaleString()}</td>
+                    <td>${(metrics.avg_comparisons || 0).toFixed(2)}</td>
+                    <td>${matchedCount}</td>
+                    <td>${missingCount}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            //generating recommendation
+            const fastestTime = Math.min(...totalTimes);
+            const fastestAlgo = algorithms[totalTimes.indexOf(fastestTime)];
+            const fewestComparisons = Math.min(...totalComparisons);
+            const efficientAlgo = algorithms[totalComparisons.indexOf(fewestComparisons)];
+            
+            let recommendation = `Based on the performance analysis: `;
+            
+            if (fastestAlgo === efficientAlgo) {
+                recommendation += `<strong>${algoNames[fastestAlgo]}</strong> performs best overall with the fastest execution time (${fastestTime.toFixed(4)} ms) and fewest character comparisons (${fewestComparisons.toLocaleString()}). `;
+            } else {
+                recommendation += `<strong>${algoNames[fastestAlgo]}</strong> has the fastest execution time (${fastestTime.toFixed(4)} ms), while <strong>${algoNames[efficientAlgo]}</strong> requires the fewest comparisons (${fewestComparisons.toLocaleString()}). `;
+            }
+            
+            const numCVs = data.num_cvs || 1;
+            const cvLength = data.cv_text_length || 0;
+            const keywordsCount = data.keywords?.length || data.total_keywords || 0;
+            recommendation += `For real-time CV screening with ${keywordsCount} keywords across ${numCVs} CV${numCVs !== 1 ? 's' : ''} (avg ${Math.round(cvLength / numCVs).toLocaleString()} characters), `;
+            
+            if (fastestAlgo === 'kmp') {
+                recommendation += `<strong>KMP</strong> is recommended due to its guaranteed O(n+m) time complexity and optimal performance on large texts.`;
+            } else if (fastestAlgo === 'rabin_karp') {
+                recommendation += `<strong>Rabin-Karp</strong> shows excellent average-case performance and is efficient for multiple pattern searches.`;
+            } else {
+                recommendation += `<strong>Brute Force</strong> is simple but may not scale well for large CVs or many keywords. Consider KMP or Rabin-Karp for production use.`;
+            }
+            
+            document.getElementById('recommendation-text').innerHTML = recommendation;
+
+            updateCard('overall', fastestAlgo === efficientAlgo ? fastestAlgo : (bestRelevanceIndex >= 0 ? algorithms[bestRelevanceIndex] : fastestAlgo), 'balances speed and accuracy');
+            updateCard('speed', fastestAlgo, 'delivers results fastest');
+            updateCard('consistency', efficientAlgo, 'keeps comparisons low');
+
+            const rankingsList = document.getElementById('algo-rankings');
+            if (rankingsList) {
+                rankingsList.innerHTML = '';
+                const rankingData = algorithms.map((algo, index) => ({
+                    key: algo,
+                    name: algoNames[algo],
+                    time: totalTimes[index] || 0,
+                    comparisons: totalComparisons[index] || 0,
+                    relevance: relevanceScores[index]
+                })).sort((a, b) => a.time - b.time);
+
+                rankingData.forEach((item, position) => {
+                    const li = document.createElement('li');
+                    li.className = 'ranking-item';
+                    li.innerHTML = `
+                        <span class="rank-pill">${position + 1}</span>
+                        <div class="ranking-meta">
+                            <span class="ranking-name">${item.name}</span>
+                            <span class="ranking-stats">${item.time.toFixed(3)} ms · ${item.comparisons.toLocaleString()} comparisons${typeof item.relevance === 'number' ? ` · ${item.relevance}% relevance` : ''}</span>
+                        </div>
+                    `;
+                    rankingsList.appendChild(li);
+                });
+            }
+
+            const scenarioSection = document.getElementById('scenario-section');
+            const scenarioMetrics = data.scenario_metrics || null;
+            if (scenarioSection) {
+                const labelMap = {
+                    small: 'Small CVs',
+                    large: 'Large CVs',
+                    single: 'Single Keyword',
+                    multiple: 'Multiple Keywords'
+                };
+
+                const cvSizeMetrics = scenarioMetrics?.cv_size || {};
+                const keywordModeMetrics = scenarioMetrics?.keyword_mode || {};
+
+                const hasCvSizeData = ['small', 'large'].some(sizeKey =>
+                    algorithms.some(algo => (cvSizeMetrics[sizeKey]?.[algo]?.sample_count || 0) > 0)
+                );
+                const hasKeywordModeData = ['single', 'multiple'].some(modeKey =>
+                    algorithms.some(algo => (keywordModeMetrics[modeKey]?.[algo]?.sample_count || 0) > 0)
+                );
+
+                if (hasCvSizeData || hasKeywordModeData) {
+                    scenarioSection.classList.remove('hidden');
+
+                    const cvSizeTimeDatasets = algorithms.map(algo => ({
+                        label: algoNames[algo],
+                        data: [
+                            cvSizeMetrics.small?.[algo]?.avg_time_per_cv || 0,
+                            cvSizeMetrics.large?.[algo]?.avg_time_per_cv || 0
+                        ],
+                        backgroundColor: algorithmColors[algo],
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        maxBarThickness: 30
+                    }));
+
+                    const cvSizeComparisonDatasets = algorithms.map(algo => ({
+                        label: algoNames[algo],
+                        data: [
+                            cvSizeMetrics.small?.[algo]?.avg_comparisons_per_cv || 0,
+                            cvSizeMetrics.large?.[algo]?.avg_comparisons_per_cv || 0
+                        ],
+                        backgroundColor: algorithmColors[algo],
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        maxBarThickness: 30
+                    }));
+
+                    const keywordModeTimeDatasets = algorithms.map(algo => ({
+                        label: algoNames[algo],
+                        data: [
+                            keywordModeMetrics.single?.[algo]?.avg_time_per_cv || 0,
+                            keywordModeMetrics.multiple?.[algo]?.avg_time_per_cv || 0
+                        ],
+                        backgroundColor: algorithmColors[algo],
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        maxBarThickness: 30
+                    }));
+
+                    const keywordModeComparisonDatasets = algorithms.map(algo => ({
+                        label: algoNames[algo],
+                        data: [
+                            keywordModeMetrics.single?.[algo]?.avg_comparisons_per_cv || 0,
+                            keywordModeMetrics.multiple?.[algo]?.avg_comparisons_per_cv || 0
+                        ],
+                        backgroundColor: algorithmColors[algo],
+                        borderRadius: 6,
+                        borderSkipped: false,
+                        maxBarThickness: 30
+                    }));
+
+                    createScenarioChart('cv-size-time-chart', ['Small CVs', 'Large CVs'], cvSizeTimeDatasets, 'time');
+                    createScenarioChart('cv-size-comparisons-chart', ['Small CVs', 'Large CVs'], cvSizeComparisonDatasets, 'comparisons');
+                    createScenarioChart('keyword-mode-time-chart', ['Single Keyword', 'Multiple Keywords'], keywordModeTimeDatasets, 'time');
+                    createScenarioChart('keyword-mode-comparisons-chart', ['Single Keyword', 'Multiple Keywords'], keywordModeComparisonDatasets, 'comparisons');
+
+                    populateScenarioTable('cv-size-tbody', cvSizeMetrics, ['small', 'large'], labelMap);
+                    populateScenarioTable('keyword-mode-tbody', keywordModeMetrics, ['single', 'multiple'], labelMap);
+
+                    const cvSizeNote = document.getElementById('cv-size-note');
+                    if (cvSizeNote) {
+                        const thresholdValue = Number(data.cv_size_threshold || 0);
+                        if (thresholdValue) {
+                            cvSizeNote.textContent = `CVs with ≤ ${thresholdValue.toLocaleString()} characters are classified as small.`;
+                        } else {
+                            cvSizeNote.textContent = 'CVs are grouped into small and large buckets based on their character count.';
+                        }
+                    }
+                } else {
+                    scenarioSection.classList.add('hidden');
+                }
+            }
+        }
+        
+        //loading results on page load
+        loadResults();
+    </script>
+</body>
+</html>
+
