@@ -40,17 +40,33 @@ Open your browser and go to:
 http://localhost:5000
 ```
 
-## Project Structure
-```
-asst/
-├── app.py                  # Flask application with string matching algorithms
-├── requirements.txt         # Dependencies
-├── templates/              # HTML templates
-│   ├── index.html         # CV Analysis page
-│   └── results.html       # Performance Comparison page
-└── static/                # Static files (CSS,JS)
-    └── styles.css          # Styling
-```
+---
+
+## Project files (as shipped)
+
+The repository already contains the following files and folders:
+
+- install.bat
+- requirements.txt
+- run.bat
+- i232520_MuhammadNoor_A2.pdf           — assignment / report
+- README.md                              — this file
+- job_desc_data_scientist.txt            — sample job description
+- job_desc_software_tester.txt
+- job_desc_web_developer.txt
+- app.py                                 — Flask application and main entry point
+- templates/
+  - index.html                           — upload / analyze UI
+  - results.html                         — performance / results UI
+- static/
+  - styles.css
+- screenshots/
+  - ss-1.jpg        
+- DataSet/
+  - abc.docx                             — sample CV / dataset file
+
+---
+
 ## Usage
 1. **Analyze a CV:**
    - Go to the home page (http://localhost:5000)
@@ -70,6 +86,44 @@ asst/
 - **Libraries:** PyPDF2, python-docx
 - **Charts:** Chart.js
 
+--- 
+## Flowchart 
+- **Upload CV -> Extract Text -> Clean & Preprocess -> Extract Keywords from JD -> Match with (Brute / Rabin-Karp / KMP) -> Measure (time & comparisons) -> Score & Rank -> Visualize results & recommendations**
+
+---
+
+---
+##  String Matching Visualizations
+
+Simple vertical list (works everywhere):
+
+![Figure 1 — Main Application Interface](screenshots/ss-1.jpg)
+*Figure 1 — Main Application Interface*
+
+![Figure 2 — Uploading CV And Job Description](screenshots/ss-2.jpg)
+*Figure 2 — Uploading CV And Job Description*
+
+![Figure 3 — Analysis Results- Ranked Candidates](screenshots/ss-3.jpg)
+*Figure 3 — Analysis Results- Ranked Candidates*
+
+![Figure 4 — Algorithm Rankings](screenshots/ss-4.jpg)
+*Figure 4 — Algorithm Rankings*
+
+![Figure 5 — Performance Metrics](screenshots/ss-5.jpg)
+*Figure 5 — Performance Metrics*
+
+![Figure 6 — Scenario Comparison](screenshots/ss-6.jpg)
+*Figure 6 — Scenario Comparison*
+
+![Figure 7 — CV Size And Keyword Mode Breakdown](screenshots/ss-7.jpg)
+*Figure 7 — CV Size And Keyword Mode Breakdown*
+
+![Figure 8 — Detailed Performance Table And Algorithm Analysis](screenshots/ss-8.jpg)
+*Figure 8 — Detailed Performance Table And Algorithm Analysis*
+
+![Figure 9 — Recommendation Insights](screenshots/ss-9.jpg)
+*Figure 9 — Recommendation Insights*
+
 ## Algorithms Implemented
 ### 1. Brute Force
 - **Time Complexity:** O(n*m)
@@ -85,6 +139,14 @@ asst/
 - **Time Complexity:** O(n+m)
 - **Space Complexity:** O(m)
 - Guaranteed linear time with optimal performance
+
+Each implementation measures:
+
+Execution time (ms)
+Character comparison counts
+Matches found (positions or counts)
+Those metrics are used for the results page and charts.
+
 
 ## Troubleshooting
 ### ModuleNotFoundError
